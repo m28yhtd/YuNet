@@ -8,6 +8,7 @@ import argparse
 
 import numpy as np
 import cv2 as cv
+import time
 
 from yunet import YuNet
 
@@ -65,7 +66,7 @@ def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps
 
     for det in (results if results is not None else []):
         bbox = det[0:4].astype(np.int32)
-        cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0]+bbox[2], bbox[1]+bbox[3]), box_color, 2)
+        cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0]+bbox[2], bbox[1]+bbox[3]), box_color, -1)
 
         conf = det[-1]
         cv.putText(output, '{:.4f}'.format(conf), (bbox[0], bbox[1]+12), cv.FONT_HERSHEY_DUPLEX, 0.5, text_color)
@@ -75,6 +76,8 @@ def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps
             cv.circle(output, landmark, 2, landmark_color[idx], 2)
 
     return output
+
+
 
 if __name__ == '__main__':
     backend_id = backend_target_pairs[args.backend_target][0]
@@ -88,37 +91,7 @@ if __name__ == '__main__':
                   topK=args.top_k,
                   backendId=backend_id,
                   targetId=target_id)
-
-    # If input is an image
-    if args.input is not None:
-        image = cv.imread(args.input)
-        h, w, _ = image.shape
-
-        # Inference
-        model.setInputSize([w, h])
-        results = model.infer(image)
-
-        # Print results
-        print('{} faces detected.'.format(results.shape[0]))
-        for idx, det in enumerate(results):
-            print('{}: {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f} {:.0f}'.format(
-                idx, *det[:-1])
-            )
-
-        # Draw results on the input image
-        image = visualize(image, results)
-
-        # Save results if save is true
-        if args.save:
-            print('Resutls saved to result.jpg\n')
-            cv.imwrite('result.jpg', image)
-
-        # Visualize results in a new window
-        if args.vis:
-            cv.namedWindow(args.input, cv.WINDOW_AUTOSIZE)
-            cv.imshow(args.input, image)
-            cv.waitKey(0)
-    elif args.video is not None:
+    if args.video is not None:
         cap = cv.VideoCapture(args.video)
         w = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
         h = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
@@ -138,15 +111,18 @@ if __name__ == '__main__':
 
         cap.release()
         out.release()
-    else: # Omit input to call default camera
+    else:
         deviceId = 0
         cap = cv.VideoCapture(deviceId)
         w = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
         h = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+        fourcc = cv.VideoWriter_fourcc(*'XVID')
+        writer = cv.VideoWriter('video.mp4', fourcc, 30, (int(w), int(h)))
         model.setInputSize([w, h])
 
         tm = cv.TickMeter()
         while cv.waitKey(1) < 0:
+            # hasFrame, frame = cap.read()
             hasFrame, frame = cap.read()
             if not hasFrame:
                 print('No frames grabbed!')
@@ -158,7 +134,8 @@ if __name__ == '__main__':
             tm.stop()
 
             # Draw results on the input image
-            frame = visualize(frame, results, fps=tm.getFPS())
+            # Default fps = tm.getFPS()
+            frame = visualize(frame, results, fps = tm.getFPS())
 
             # Visualize results in a new Window
             cv.imshow('YuNet Demo', frame)
