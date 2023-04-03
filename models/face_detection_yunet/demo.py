@@ -168,6 +168,7 @@ if __name__ == '__main__':
                 break
 
             results = model.infer(frame)  # results is a tuple
+            frame = detectAndDisplay(frame, 0.5)
             frame = visualize(frame, results)
             out.write(frame)
 
