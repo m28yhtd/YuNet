@@ -51,6 +51,51 @@ parser.add_argument('--vis', '-v', action='store_true',
                     help='Usage: Specify to open a new window to show results. Invalid in case of camera input.')
 args = parser.parse_args()
 
+
+def detectAndDisplay(frame, min_confidence):
+    img = cv.resize(frame, None, fx=0.8, fy=0.8)
+    height, width, channels = img.shape
+    blob = cv.dnn.blobFromImage(img, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+
+    net.setInput(blob)
+    outs = net.forward(output_layers)
+
+    # -- 탐지한 객체의 클래스 예측
+    class_ids = []
+    confidences = []
+    boxes = []
+
+    for see in outs:
+        for detection in see:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
+            if class_id == 0 and confidence > min_confidence:
+                # -- 탐지한 객체 박싱
+                center_x = int(detection[0] * width)
+                center_y = int(detection[1] * height)
+                w = int(detection[2] * width)
+                h = int(detection[3] * height)
+
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
+
+                boxes.append([x, y, w, h])
+                confidences.append(float(confidence))
+                class_ids.append(class_id)
+
+    indexes = cv.dnn.NMSBoxes(boxes, confidences, min_confidence, 0.4)
+    font = cv.FONT_HERSHEY_DUPLEX
+    for i in range(len(boxes)):
+        if i in indexes:
+            x, y, w, h = boxes[i]
+            label = "{}: {:.2f}".format(classes[class_ids[i]], confidences[i] * 100)
+            print(i, label)
+            color = colors[i]  # -- 경계 상자 컬러 설정 / 단일 생상 사용시 (255,255,255)사용(B,G,R)
+            cv.rectangle(img, (x, y), (x + w, y + h), color, 2)
+            cv.putText(img, label, (x, y - 5), font, 1, color, 1)
+    return img
+
 def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps=None):
     output = image.copy()
     landmark_color = [
@@ -78,10 +123,26 @@ def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps
     return output
 
 
-
 if __name__ == '__main__':
     backend_id = backend_target_pairs[args.backend_target][0]
     target_id = backend_target_pairs[args.backend_target][1]
+
+    # -- yolo 포맷 및 클래스명 불러오기
+    model_file = './yolov3.weights'  # -- 본인 개발 환경에 맞게 변경할 것
+    config_file = './yolov3.cfg'  # -- 본인 개발 환경에 맞게 변경할 것
+    net = cv.dnn.readNet(model_file, config_file)
+
+    # -- GPU 사용
+    # net.setPreferableBackend(cv.dnn.DNN_BACKEND_CUDA)
+    # net.setPreferableTarget(cv.dnn.DNN_TARGET_CUDA)
+
+    # -- 클래스(names파일) 오픈 / 본인 개발 환경에 맞게 변경할 것
+    classes = []
+    with open("./coco.names", "r") as f:
+        classes = [line.strip() for line in f.readlines()]
+    layer_names = net.getLayerNames()
+    output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
+    colors = np.random.uniform(0, 255, size=(len(classes), 3))
 
     # Instantiate YuNet
     model = YuNet(modelPath=args.model,
@@ -91,15 +152,16 @@ if __name__ == '__main__':
                   topK=args.top_k,
                   backendId=backend_id,
                   targetId=target_id)
+
     if args.video is not None:
         cap = cv.VideoCapture(args.video)
-        w = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
-        h = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+        row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+        col = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
         fourcc = cv.VideoWriter_fourcc('m', 'p', '4', 'v')
-        model.setInputSize([w, h])
-        out = cv.VideoWriter('result.mp4', fourcc, 30.0, (w, h))
+        model.setInputSize([row, col])
+        out = cv.VideoWriter('result.mp4', fourcc, 30.0, (row, col))
 
-        while (True):
+        while(True):
             hasFrame, frame = cap.read()
             if not hasFrame:
                 print('No frames grabbed!')
@@ -114,11 +176,11 @@ if __name__ == '__main__':
     else:
         deviceId = 0
         cap = cv.VideoCapture(deviceId)
-        w = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
-        h = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+        row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+        col = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
         fourcc = cv.VideoWriter_fourcc(*'XVID')
-        writer = cv.VideoWriter('video.mp4', fourcc, 30, (int(w), int(h)))
-        model.setInputSize([w, h])
+        writer = cv.VideoWriter('video.mp4', fourcc, 30, (int(row), int(col)))
+        model.setInputSize([row, col])
 
         tm = cv.TickMeter()
         while cv.waitKey(1) < 0:
@@ -134,8 +196,9 @@ if __name__ == '__main__':
             tm.stop()
 
             # Draw results on the input image
+            frame = detectAndDisplay(frame, 0.5)
             # Default fps = tm.getFPS()
-            frame = visualize(frame, results, fps = tm.getFPS())
+            frame = visualize(frame, results, fps=tm.getFPS())
 
             # Visualize results in a new Window
             cv.imshow('YuNet Demo', frame)
