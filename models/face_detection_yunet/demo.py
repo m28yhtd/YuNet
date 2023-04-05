@@ -166,6 +166,7 @@ if __name__ == '__main__':
                 break
 
             results = model.infer(frame)  # results is a tuple
+            # confidence = 0.5 is best
             boxes, indexes = detectbox(frame, 0.5)
             # Default fps = tm.getFPS()
             frame = visualize(frame, results, boxes, indexes)
