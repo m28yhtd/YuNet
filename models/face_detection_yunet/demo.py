@@ -52,8 +52,8 @@ parser.add_argument('--vis', '-v', action='store_true',
 args = parser.parse_args()
 
 
-def detectAndDisplay(frame, min_confidence):
-    img = cv.resize(frame, None, fx=0.8, fy=0.8)
+def detectBox(frame, min_confidence):
+    img = frame
     height, width, channels = img.shape
     blob = cv.dnn.blobFromImage(img, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
 
@@ -85,18 +85,9 @@ def detectAndDisplay(frame, min_confidence):
                 class_ids.append(class_id)
 
     indexes = cv.dnn.NMSBoxes(boxes, confidences, min_confidence, 0.4)
-    font = cv.FONT_HERSHEY_DUPLEX
-    for i in range(len(boxes)):
-        if i in indexes:
-            x, y, w, h = boxes[i]
-            label = "{}: {:.2f}".format(classes[class_ids[i]], confidences[i] * 100)
-            print(i, label)
-            color = colors[i]  # -- 경계 상자 컬러 설정 / 단일 생상 사용시 (255,255,255)사용(B,G,R)
-            cv.rectangle(img, (x, y), (x + w, y + h), color, 2)
-            cv.putText(img, label, (x, y - 5), font, 1, color, 1)
-    return img
+    return boxes, indexes
 
-def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps=None):
+def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=(0, 0, 255), fps=None):
     output = image.copy()
     landmark_color = [
         (255,   0,   0), # right eye
@@ -109,16 +100,23 @@ def visualize(image, results, box_color=(0, 255, 0), text_color=(0, 0, 255), fps
     if fps is not None:
         cv.putText(output, 'FPS: {:.2f}'.format(fps), (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, text_color)
 
-    for det in (results if results is not None else []):
-        bbox = det[0:4].astype(np.int32)
-        cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0]+bbox[2], bbox[1]+bbox[3]), box_color, -1)
+    for i in range(len(boxes)):
+        if i in indexes:
+            x, y, w, h = boxes[i]
+            color = colors[i]  # -- 경계 상자 컬러 설정 / 단일 생상 사용시 (255,255,255)사용(B,G,R)
+            detected = False
 
-        conf = det[-1]
-        cv.putText(output, '{:.4f}'.format(conf), (bbox[0], bbox[1]+12), cv.FONT_HERSHEY_DUPLEX, 0.5, text_color)
+            for det in (results if results is not None else []):
+                bbox = det[0:4].astype(np.int32)
+                cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), box_color, -1)
 
-        landmarks = det[4:14].astype(np.int32).reshape((5,2))
-        for idx, landmark in enumerate(landmarks):
-            cv.circle(output, landmark, 2, landmark_color[idx], 2)
+                if x < bbox[0] and y < bbox[1] and x + w > bbox[0] + bbox[2] and y + h > bbox[1] + bbox[3]:
+                    detected = True
+
+            if detected:
+                cv.rectangle(img, (x, y), (x + w, y + h), color, 2)
+            else:
+                cv.rectangle(img, (x, y), (x + w, y + h), color, -1)
 
     return output
 
@@ -153,7 +151,7 @@ if __name__ == '__main__':
                   backendId=backend_id,
                   targetId=target_id)
 
-    if args.video is not None:
+    """ if args.video is not None:
         cap = cv.VideoCapture(args.video)
         row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
         col = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
@@ -175,33 +173,34 @@ if __name__ == '__main__':
         cap.release()
         out.release()
     else:
-        deviceId = 0
-        cap = cv.VideoCapture(deviceId)
-        row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
-        col = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
-        fourcc = cv.VideoWriter_fourcc(*'XVID')
-        writer = cv.VideoWriter('video.mp4', fourcc, 30, (int(row), int(col)))
-        model.setInputSize([row, col])
+    """
+    deviceId = 0
+    cap = cv.VideoCapture(deviceId)
+    row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    col = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    #fourcc = cv.VideoWriter_fourcc(*'XVID')
+    #writer = cv.VideoWriter('video.mp4', fourcc, 30, (int(row), int(col)))
+    model.setInputSize([row, col])
 
-        tm = cv.TickMeter()
-        while cv.waitKey(1) < 0:
-            # hasFrame, frame = cap.read()
-            hasFrame, frame = cap.read()
-            if not hasFrame:
-                print('No frames grabbed!')
-                break
+    tm = cv.TickMeter()
+    while cv.waitKey(1) < 0:
+        # hasFrame, frame = cap.read()
+        hasFrame, frame = cap.read()
+        if not hasFrame:
+            print('No frames grabbed!')
+            break
 
-            # Inference
-            tm.start()
-            results = model.infer(frame) # results is a tuple
-            tm.stop()
+        # Inference
+        tm.start()
+        results = model.infer(frame) # results is a tuple
+        tm.stop()
 
-            # Draw results on the input image
-            frame = detectAndDisplay(frame, 0.5)
-            # Default fps = tm.getFPS()
-            frame = visualize(frame, results, fps=tm.getFPS())
+        # Draw results on the input image
+        boxes, indexes = detectBox(frame, 0.5)
+        # Default fps = tm.getFPS()
+        frame = visualize(frame, results, boxes, indexes, fps=tm.getFPS())
 
-            # Visualize results in a new Window
-            cv.imshow('YuNet Demo', frame)
+        # Visualize results in a new Window
+        cv.imshow('YuNet Demo', frame)
 
-            tm.reset()
+        tm.reset()
