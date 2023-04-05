@@ -52,7 +52,7 @@ parser.add_argument('--vis', '-v', action='store_true',
 args = parser.parse_args()
 
 
-def detectBox(frame, min_confidence):
+def detectbox(frame, min_confidence):
     img = frame
     height, width, channels = img.shape
     blob = cv.dnn.blobFromImage(img, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
@@ -114,9 +114,9 @@ def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=
                     detected = True
 
             if detected:
-                cv.rectangle(img, (x, y), (x + w, y + h), color, 2)
+                cv.rectangle(output, (x, y), (x + w, y + h), color, 2)
             else:
-                cv.rectangle(img, (x, y), (x + w, y + h), color, -1)
+                cv.rectangle(output, (x, y), (x + w, y + h), color, -1)
 
     return output
 
@@ -151,7 +151,7 @@ if __name__ == '__main__':
                   backendId=backend_id,
                   targetId=target_id)
 
-    """ if args.video is not None:
+    if args.video is not None:
         cap = cv.VideoCapture(args.video)
         row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
         col = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
@@ -159,48 +159,49 @@ if __name__ == '__main__':
         model.setInputSize([row, col])
         out = cv.VideoWriter('result.mp4', fourcc, 30.0, (row, col))
 
-        while(True):
+        while True:
             hasFrame, frame = cap.read()
             if not hasFrame:
                 print('No frames grabbed!')
                 break
 
             results = model.infer(frame)  # results is a tuple
-            frame = detectAndDisplay(frame, 0.5)
-            frame = visualize(frame, results)
+            boxes, indexes = detectbox(frame, 0.5)
+            # Default fps = tm.getFPS()
+            frame = visualize(frame, results, boxes, indexes)
             out.write(frame)
 
         cap.release()
         out.release()
+
     else:
-    """
-    deviceId = 0
-    cap = cv.VideoCapture(deviceId)
-    row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
-    col = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
-    #fourcc = cv.VideoWriter_fourcc(*'XVID')
-    #writer = cv.VideoWriter('video.mp4', fourcc, 30, (int(row), int(col)))
-    model.setInputSize([row, col])
+        deviceId = 0
+        cap = cv.VideoCapture(deviceId)
+        row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+        col = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+        #fourcc = cv.VideoWriter_fourcc(*'XVID')
+        #writer = cv.VideoWriter('video.mp4', fourcc, 30, (int(row), int(col)))
+        model.setInputSize([row, col])
 
-    tm = cv.TickMeter()
-    while cv.waitKey(1) < 0:
-        # hasFrame, frame = cap.read()
-        hasFrame, frame = cap.read()
-        if not hasFrame:
-            print('No frames grabbed!')
-            break
+        tm = cv.TickMeter()
+        while cv.waitKey(1) < 0:
+            # hasFrame, frame = cap.read()
+            hasFrame, frame = cap.read()
+            if not hasFrame:
+                print('No frames grabbed!')
+                break
 
-        # Inference
-        tm.start()
-        results = model.infer(frame) # results is a tuple
-        tm.stop()
+            # Inference
+            tm.start()
+            results = model.infer(frame) # results is a tuple
+            tm.stop()
 
-        # Draw results on the input image
-        boxes, indexes = detectBox(frame, 0.5)
-        # Default fps = tm.getFPS()
-        frame = visualize(frame, results, boxes, indexes, fps=tm.getFPS())
+            # Draw results on the input image
+            boxes, indexes = detectbox(frame, 0.5)
+            # Default fps = tm.getFPS()
+            frame = visualize(frame, results, boxes, indexes, fps=tm.getFPS())
 
-        # Visualize results in a new Window
-        cv.imshow('YuNet Demo', frame)
+            # Visualize results in a new Window
+            cv.imshow('YuNet Demo', frame)
 
-        tm.reset()
+            tm.reset()
