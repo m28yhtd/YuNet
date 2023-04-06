@@ -102,35 +102,31 @@ def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=
     if fps is not None:
         cv.putText(output, 'FPS: {:.2f}'.format(fps), (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, text_color)
 
-    for i in range(len(boxes)):
-        if i in indexes:
-            x, y, w, h = boxes[i]
+    for det in (results if results is not None else []):
+        bbox = det[0:4].astype(np.int32)
+        cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), box_color, -1)
 
-            for det in (results if results is not None else []):
-                bbox = det[0:4].astype(np.int32)
-                cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), box_color, -1)
-
-                if x < bbox[0] and y < bbox[1] and x + w > bbox[0] + bbox[2] and y + h > bbox[1] + bbox[3]:
-                    continue
-                else:
-                    box_list.append(i)
-
-    for i in range(len(boxes)):
-        if i in indexes:
-            if i in box_list:
+        for i in range(len(boxes)):
+            if i in indexes:
                 x, y, w, h = boxes[i]
-                if detected:
-                    continue
+                if x < bbox[0] and y < bbox[1] and x + w > bbox[0] + bbox[2] and y + h > bbox[1] + bbox[3]:
+                    box_list.append(i)
                 else:
-                    region = output[y:y + h, x:x + w]
-                    if region.shape[0] > 0 and region.shape[1] > 0:
-                        col = region.shape[0]
-                        row = region.shape[1]
-                        region = cv.resize(region, (0, 0), fx=0.1, fy=0.1, interpolation=cv.INTER_AREA)
-                        region = cv.resize(region, (row, col), interpolation=cv.INTER_AREA)
-                        output[y:y + h, x:x + w] = region
-                    else:
-                        continue
+                    continue
+
+    for i in range(len(boxes)):
+        if i in indexes:
+            if i not in box_list:
+                x, y, w, h = boxes[i]
+                region = output[y:y + h, x:x + w]
+                if region.shape[0] > 0 and region.shape[1] > 0:
+                    col = region.shape[0]
+                    row = region.shape[1]
+                    region = cv.resize(region, (0, 0), fx=0.05, fy=0.05, interpolation=cv.INTER_AREA)
+                    region = cv.resize(region, (row, col), interpolation=cv.INTER_AREA)
+                    output[y:y + h, x:x + w] = region
+                else:
+                    continue
 
     return output
 
