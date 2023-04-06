@@ -112,7 +112,7 @@ def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=
                 if region.shape[0] > 0 and region.shape[1] > 0:
                     col = region.shape[0]
                     row = region.shape[1]
-                    region = cv.resize(region, (0, 0), fx=0.1, fy=0.1, interpolation=cv.INTER_AREA)
+                    region = cv.resize(region, (0, 0), fx=0.05, fy=0.05, interpolation=cv.INTER_AREA)
                     region = cv.resize(region, (row, col), interpolation=cv.INTER_AREA)
                     output[y:y + h, x:x + w] = region
                 else:
@@ -195,10 +195,10 @@ if __name__ == '__main__':
             # Inference
             tm.start()
             results = model.infer(frame) # results is a tuple
-            tm.stop()
 
             # Draw results on the input image
             boxes, indexes = detectbox(frame, 0.5)
+            tm.stop()
             # Default fps = tm.getFPS()
             frame = visualize(frame, results, boxes, indexes, fps=tm.getFPS())
 
