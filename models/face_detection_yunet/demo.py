@@ -89,6 +89,8 @@ def detectbox(frame, min_confidence):
 
 def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=(0, 0, 255), fps=None):
     output = image.copy()
+    box_list = []
+
     landmark_color = [
         (255,   0,   0), # right eye
         (  0,   0, 255), # left eye
@@ -103,27 +105,32 @@ def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=
     for i in range(len(boxes)):
         if i in indexes:
             x, y, w, h = boxes[i]
-            detected = False
 
             for det in (results if results is not None else []):
                 bbox = det[0:4].astype(np.int32)
                 cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), box_color, -1)
 
                 if x < bbox[0] and y < bbox[1] and x + w > bbox[0] + bbox[2] and y + h > bbox[1] + bbox[3]:
-                    detected = True
-
-            if detected:
-                continue
-            else:
-                region = output[y:y + h, x:x + w]
-                if region.shape[0] > 0 and region.shape[1] > 0:
-                    col = region.shape[0]
-                    row = region.shape[1]
-                    region = cv.resize(region, (0, 0), fx=0.1, fy=0.1, interpolation=cv.INTER_AREA)
-                    region = cv.resize(region, (row, col), interpolation=cv.INTER_AREA)
-                    output[y:y + h, x:x + w] = region
-                else:
                     continue
+                else:
+                    box_list.append(i)
+
+    for i in range(len(boxes)):
+        if i in indexes:
+            if i in box_list:
+                x, y, w, h = boxes[i]
+                if detected:
+                    continue
+                else:
+                    region = output[y:y + h, x:x + w]
+                    if region.shape[0] > 0 and region.shape[1] > 0:
+                        col = region.shape[0]
+                        row = region.shape[1]
+                        region = cv.resize(region, (0, 0), fx=0.1, fy=0.1, interpolation=cv.INTER_AREA)
+                        region = cv.resize(region, (row, col), interpolation=cv.INTER_AREA)
+                        output[y:y + h, x:x + w] = region
+                    else:
+                        continue
 
     return output
 
