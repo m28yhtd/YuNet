@@ -103,7 +103,6 @@ def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=
     for i in range(len(boxes)):
         if i in indexes:
             x, y, w, h = boxes[i]
-            color = colors[i]  # -- 경계 상자 컬러 설정 / 단일 생상 사용시 (255,255,255)사용(B,G,R)
             detected = False
 
             for det in (results if results is not None else []):
@@ -114,9 +113,17 @@ def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=
                     detected = True
 
             if detected:
-                cv.rectangle(output, (x, y), (x + w, y + h), color, 2)
+                continue
             else:
-                cv.rectangle(output, (x, y), (x + w, y + h), color, -1)
+                region = output[y:y + h, x:x + w]
+                if region.shape[0] > 0 and region.shape[1] > 0:
+                    col = region.shape[0]
+                    row = region.shape[1]
+                    region = cv.resize(region, (0, 0), fx=0.1, fy=0.1, interpolation=cv.INTER_AREA)
+                    region = cv.resize(region, (row, col), interpolation=cv.INTER_AREA)
+                    output[y:y + h, x:x + w] = region
+                else:
+                    continue
 
     return output
 
