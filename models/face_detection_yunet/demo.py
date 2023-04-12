@@ -51,7 +51,6 @@ parser.add_argument('--vis', '-v', action='store_true',
                     help='Usage: Specify to open a new window to show results. Invalid in case of camera input.')
 args = parser.parse_args()
 
-
 def detectbox(frame, min_confidence):
     img = frame
     height, width, channels = img.shape
@@ -93,33 +92,47 @@ def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=
     if fps is not None:
         cv.putText(output, 'FPS: {:.2f}'.format(fps), (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, text_color)
 
-    for i in range(len(boxes)):
-        if i in indexes:
-            x, y, w, h = boxes[i]
-            detected = False
+    if boxes == 0:
+        for det in (results if results is not None else []):
+            bbox = det[0:4].astype(np.int32)
+            cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), box_color, -1)
+    else:
+        for i in range(len(boxes)):
+            if i in indexes:
+                x, y, w, h = boxes[i]
+                detected = False
 
-            for det in (results if results is not None else []):
-                bbox = det[0:4].astype(np.int32)
-                cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), box_color, -1)
+                for det in (results if results is not None else []):
+                    bbox = det[0:4].astype(np.int32)
+                    cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), box_color, -1)
 
-                if x < bbox[0] and y < bbox[1] and x + w > bbox[0] + bbox[2] and y + h > bbox[1] + bbox[3]:
-                    detected = True
+                    if x < bbox[0] and y < bbox[1] and x + w > bbox[0] + bbox[2] and y + h > bbox[1] + bbox[3]:
+                        detected = True
 
-            if detected:
-                continue
-            else:
-                region = output[y:y+h, x:x+w]
-                if region.shape[0] > 0 and region.shape[1] > 0:
-                    col = region.shape[0]
-                    row = region.shape[1]
-                    region = cv.resize(region, (0, 0), fx=0.05, fy=0.05, interpolation=cv.INTER_AREA)
-                    region = cv.resize(region, (row, col), interpolation=cv.INTER_AREA)
-                    output[y:y + h, x:x + w] = region
-                else:
+                if detected:
                     continue
+                else:
+                    region = output[y:y + int(h / 3), x:x + w]
+                    if region.shape[0] > 0 and region.shape[1] > 0:
+                        col = region.shape[0]
+                        row = region.shape[1]
+                        region = cv.resize(region, (0, 0), fx=0.05, fy=0.15, interpolation=cv.INTER_AREA)
+                        region = cv.resize(region, (row, col), interpolation=cv.INTER_AREA)
+                        output[y:y + col, x:x + row] = region
+                    else:
+                        continue
 
     return output
 
+'''
+def pre_visualize(image, results, box_color=(0, 0, 255)):
+    output = image.copy()
+
+    for det in (results if results is not None else []):
+        bbox = det[0:4].astype(np.int32)
+        cv.rectangle(output, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), box_color, -1)
+    return output
+'''
 
 if __name__ == '__main__':
     backend_id = backend_target_pairs[args.backend_target][0]
@@ -129,6 +142,8 @@ if __name__ == '__main__':
     model_file = './yolov3.weights'  # -- 본인 개발 환경에 맞게 변경할 것
     config_file = './yolov3.cfg'  # -- 본인 개발 환경에 맞게 변경할 것
     net = cv.dnn.readNet(model_file, config_file)
+
+    person = 0
 
     # -- GPU 사용
     # net.setPreferableBackend(cv.dnn.DNN_BACKEND_CUDA)
@@ -159,17 +174,49 @@ if __name__ == '__main__':
         model.setInputSize([row, col])
         out = cv.VideoWriter('result.mp4', fourcc, 30.0, (row, col))
 
+        count = 0
+        tick = 0
+        boxes = None
+        indexes = None
+
         while True:
             hasFrame, frame = cap.read()
             if not hasFrame:
                 print('No frames grabbed!')
                 break
 
+            i = 0
+
             results = model.infer(frame)  # results is a tuple
-            # confidence = 0.5 is best
-            boxes, indexes = detectbox(frame, 0.5)
+
+            for det in (results if results is not None else []):
+                i = i + 1
+
+            # Draw results on the input image
+            if person != i:
+                count = 4
+                tick = 3
+            person = i
+
+            if count == 4:
+                boxes, indexes = detectbox(frame, 0.3)
+                count = count - 1
+            elif count > 0:
+                count = count - 1
+            else:
+                tick = tick - 1
+                count = 4
+
+            if tick == 0:
+                boxes = None
+                indexes = None
+
             # Default fps = tm.getFPS()
-            frame = visualize(frame, results, boxes, indexes)
+            if boxes == None:
+                frame = visualize(frame, results, 0, 0)
+            else:
+                frame = visualize(frame, results, boxes, indexes)
+
             out.write(frame)
 
         cap.release()
@@ -184,6 +231,11 @@ if __name__ == '__main__':
         #writer = cv.VideoWriter('video.mp4', fourcc, 30, (int(row), int(col)))
         model.setInputSize([row, col])
 
+        count = 0
+        tick = 0
+        boxes = None
+        indexes = None
+
         tm = cv.TickMeter()
         while cv.waitKey(1) < 0:
             # hasFrame, frame = cap.read()
@@ -192,15 +244,39 @@ if __name__ == '__main__':
                 print('No frames grabbed!')
                 break
 
+            i = 0
+
             # Inference
             tm.start()
             results = model.infer(frame) # results is a tuple
 
-            # Draw results on the input image
-            boxes, indexes = detectbox(frame, 0.5)
+            for det in (results if results is not None else []):
+                i = i + 1
+
+            if person != i:
+                count = 4
+                tick = 3
+            person = i
+
+            if count == 4:
+                boxes, indexes = detectbox(frame, 0.3)
+                count = count - 1
+            elif count > 0:
+                count = count - 1
+            else:
+                tick = tick - 1
+                count = 4
+
+            if tick == 0:
+                boxes = None
+                indexes = None
+
             tm.stop()
             # Default fps = tm.getFPS()
-            frame = visualize(frame, results, boxes, indexes, fps=tm.getFPS())
+            if boxes == None:
+                frame = visualize(frame, results, 0, 0, fps = tm.getFPS())
+            else:
+                frame = visualize(frame, results, boxes, indexes, fps = tm.getFPS())
 
             # Visualize results in a new Window
             cv.imshow('YuNet Demo', frame)
