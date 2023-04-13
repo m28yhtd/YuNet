@@ -9,6 +9,9 @@ import argparse
 import numpy as np
 import cv2 as cv
 import time
+import requests
+import threading
+
 
 from yunet import YuNet
 
@@ -124,6 +127,9 @@ def visualize(image, results, boxes, indexes, box_color=(0, 255, 0), text_color=
 
     return output
 
+def send_frame(url, frame, timeData):
+    _, img_encoded = cv2.imencode(".jpg", frame)
+    requests.post(url, data={'time': timeData, 'cameraID': cameraID}, files={'frame': ('image.jpg', img_encoded, 'image/jpeg')})
 '''
 def pre_visualize(image, results, box_color=(0, 0, 255)):
     output = image.copy()
@@ -137,6 +143,9 @@ def pre_visualize(image, results, box_color=(0, 0, 255)):
 if __name__ == '__main__':
     backend_id = backend_target_pairs[args.backend_target][0]
     target_id = backend_target_pairs[args.backend_target][1]
+
+    OriginURL = "http://127.0.0.1:5000/camera/original"
+    ProURL = "http://127.0.0.1:5000/camera/process"
 
     # -- yolo 포맷 및 클래스명 불러오기
     model_file = './yolov3.weights'  # -- 본인 개발 환경에 맞게 변경할 것
@@ -223,6 +232,9 @@ if __name__ == '__main__':
         out.release()
 
     else:
+        # 카메라ID 설정
+        cameraID = 'esqure_01'
+
         deviceId = 0
         cap = cv.VideoCapture(deviceId)
         row = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
@@ -240,6 +252,8 @@ if __name__ == '__main__':
         while cv.waitKey(1) < 0:
             # hasFrame, frame = cap.read()
             hasFrame, frame = cap.read()
+            originFrame = frame
+            timeData = time.time()
             if not hasFrame:
                 print('No frames grabbed!')
                 break
@@ -281,4 +295,12 @@ if __name__ == '__main__':
             # Visualize results in a new Window
             cv.imshow('YuNet Demo', frame)
 
-            tm.reset()
+            # 프레임 처리 및 서버 전송 병렬 처리
+            t1 = threading.Thread(target=send_frame, args=(OriginURL, OriginFrame, timeData))
+            t2 = threading.Thread(target=send_frame, args=(ProURL, frame, timeData))
+            t1.start()
+            t2.start()
+
+        tm.reset()
+
+        cap.release()
