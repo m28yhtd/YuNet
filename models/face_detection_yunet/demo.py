@@ -42,7 +42,7 @@ parser.add_argument('--backend_target', '-bt', type=int, default=0,
                         {:d}: TIM-VX + NPU,
                         {:d}: CANN + NPU
                     '''.format(*[x for x in range(len(backend_target_pairs))]))
-parser.add_argument('--conf_threshold', type=float, default=0.9,
+parser.add_argument('--conf_threshold', type=float, default=0.8,
                     help='Usage: Set the minimum needed confidence for the model to identify a face, defauts to 0.9. Smaller values may result in faster detection, but will limit accuracy. Filter out faces of confidence < conf_threshold.')
 parser.add_argument('--nms_threshold', type=float, default=0.3,
                     help='Usage: Suppress bounding boxes of iou >= nms_threshold. Default = 0.3.')
@@ -203,18 +203,18 @@ if __name__ == '__main__':
 
             # Draw results on the input image
             if person != i:
-                count = 4
+                count = 6
                 tick = 3
             person = i
 
-            if count == 4:
+            if count == 6:
                 boxes, indexes = detectbox(frame, 0.3)
                 count = count - 1
             elif count > 0:
                 count = count - 1
             else:
                 tick = tick - 1
-                count = 4
+                count = 6
 
             if tick == 0:
                 boxes = None
@@ -268,18 +268,18 @@ if __name__ == '__main__':
                 i = i + 1
 
             if person != i:
-                count = 4
+                count = 6
                 tick = 3
             person = i
 
-            if count == 4:
+            if count == 6:
                 boxes, indexes = detectbox(frame, 0.3)
                 count = count - 1
             elif count > 0:
                 count = count - 1
             else:
                 tick = tick - 1
-                count = 4
+                count = 6
 
             if tick == 0:
                 boxes = None
