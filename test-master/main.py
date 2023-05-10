@@ -99,7 +99,7 @@ def visualize(frame, results, boxes, box_color=(255, 0, 0), text_color=(0, 0, 25
                     output = mosaic_area(output, bbox)
                     # print(f'bbox = {bbox}')
                     # cv2.rectangle(output, bbox , box_color, -1)
-                    if x1 < bbox[0] and y1 < bbox[1] and x2 > bbox[2] and y2 > bbox[3]:
+                    if x1_new < bbox[0] and y1 < bbox[1] and x2_new > bbox[2] and y2_new > bbox[3]:
                         detected = True
 
                 if detected:
