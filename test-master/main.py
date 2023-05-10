@@ -36,8 +36,6 @@ def mosaic_area(img, box, ratio=0.1):
     # cv2.imshow("img_mosaic", img_mosaic)
     return img_mosaic
 
-
-
 def detectbox(frame):
     img = frame
     # print('detectbox')
