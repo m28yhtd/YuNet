@@ -60,28 +60,6 @@ def detectbox(frame):
             boxes_buf.append([x, y, w, h])
     return boxes_buf
 
-def detectbox_low(frame):
-    img = frame
-    # print('detectbox')
-    outs = yolo_model(img, classes=0, conf=0.1)
-    # annotated_frame = outs[0].plot()
-
-    # cv2.imwrite(f'camera/original/{timeData}.jpg', annotated_frame)
-
-    # -- 탐지한 객체의 클래스 예측
-    # class_ids = []
-    boxes_buf = []
-
-    # outs == 객체 개수
-    # detection == box x1,y1, x2, y2
-    for see in outs:
-        for detection in see:  # see == outs[0,1,2,3 ..., n]
-            boxes = detection.boxes  #
-            box = boxes[0]  # 가장 높은 conf 값을 갖은 것
-            x, y, w, h = box.xywh[0].tolist()
-            boxes_buf.append([x, y, w, h])
-    return boxes_buf
-
 # results = bbox ==? yunet
 # boxes = yolo
 def visualize(frame, results, boxes, box_color=(255, 0, 0), text_color=(0, 0, 255), fps=None):
@@ -222,10 +200,7 @@ if __name__ == '__main__':
 
             if count == 6:
                 # print(f'frame_num: {frame_num}')
-                if tick == 1:
-                    boxes = detectbox_low(frame)
-                else:
-                    boxes = detectbox(frame)
+                boxes = detectbox(frame)
                 count = count - 1
             elif count > 0:
                 count = count - 1
