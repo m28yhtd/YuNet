@@ -10,7 +10,7 @@ import threading
 import subprocess
 from ultralytics import YOLO
 
-def mosaic_area(img, box, ratio=0.1):
+def mosaic_area(img, box, ratio=0.05):
     # 모자이크를 적용할 영역을 구합니다.
     for i in range(len(box)):
         if box[i] < 0: 
@@ -36,6 +36,7 @@ def mosaic_area(img, box, ratio=0.1):
     # cv2.imshow("img_mosaic", img_mosaic)
     return img_mosaic
 
+'''
 def detectbox(frame):
     img = frame
     # print('detectbox')
@@ -57,6 +58,7 @@ def detectbox(frame):
             x, y, w, h = box.xywh[0].tolist()
             boxes_buf.append([x, y, w, h])
     return boxes_buf
+'''
 
 # results = bbox ==? yunet
 # boxes = yolo
@@ -72,8 +74,7 @@ def visualize(frame, results, boxes, box_color=(255, 0, 0), text_color=(0, 0, 25
             output = mosaic_area(output, bbox)
             # cv2.rectangle(output, bbox , box_color, -1)
             
-
-
+    '''
     else:
         # print(f'len(boxes) = {len(boxes)}')
         for i in range(len(boxes)):
@@ -125,7 +126,7 @@ def visualize(frame, results, boxes, box_color=(255, 0, 0), text_color=(0, 0, 25
                     
                     output[y1:y2_new, x1_new:x2_new] = mosaic
                     # cv2.imshow("img_mosaic", img_mosaic)
-
+    '''
     return output
 
 if __name__ == '__main__':
@@ -198,7 +199,7 @@ if __name__ == '__main__':
 
             if count == 6:
                 # print(f'frame_num: {frame_num}')
-                boxes = detectbox(frame)
+                # boxes = detectbox(frame)
                 count = count - 1
             elif count > 0:
                 count = count - 1
