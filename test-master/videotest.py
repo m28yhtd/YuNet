@@ -44,6 +44,7 @@ def mosaic_area(img, box, ratio=0.1):
     # cv2.imshow("img_mosaic", img_mosaic)
     return img_mosaic
 
+'''
 def detectbox(frame):
     img = frame
     # print('detectbox')
@@ -65,6 +66,7 @@ def detectbox(frame):
             x, y, w, h = box.xywh[0].tolist()
             boxes_buf.append([x, y, w, h])
     return boxes_buf
+'''
 
 # results = bbox ==? yunet
 # boxes = yolo
@@ -80,8 +82,7 @@ def visualize(frame, results, boxes, box_color=(255, 0, 0), text_color=(0, 0, 25
             output = mosaic_area(output, bbox)
             # cv2.rectangle(output, bbox , box_color, -1)
             
-
-
+    '''
     else:
         # print(f'len(boxes) = {len(boxes)}')
         for i in range(len(boxes)):
@@ -126,7 +127,7 @@ def visualize(frame, results, boxes, box_color=(255, 0, 0), text_color=(0, 0, 25
                         # output[y1:y2, x1:x2] = region
                     else:
                         continue
-
+    '''
     return output
 
 if __name__ == '__main__':
@@ -135,7 +136,7 @@ if __name__ == '__main__':
     yolo_model = YOLO('yolov8n.onnx')
     person = 0
     frame_num = 0
-    videoPath = 'lab.mp4'
+    videoPath = 'test.mp4'
     # print('loading')
     
     cap = cv2.VideoCapture(videoPath)
@@ -145,7 +146,7 @@ if __name__ == '__main__':
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     face_detector.setInputSize([row, col])
     fps = cap.get(cv2.CAP_PROP_FPS)
-    out = cv2.VideoWriter('final_result.mp4', fourcc, fps, (row, col))
+    out = cv2.VideoWriter('final_result_test2.mp4', fourcc, fps, (row, col))
 
     count = 0
     tick = 0
@@ -164,7 +165,7 @@ if __name__ == '__main__':
             if not hasFrame:
                 print('No frames grabbed!')
                 break
-            
+
             # If the frame is not 3 channels, convert it to 3 channels
             channels = 1 if len(frame.shape) == 2 else frame.shape[2]
             if channels == 1:
@@ -173,12 +174,12 @@ if __name__ == '__main__':
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
             height, width, _ = frame.shape
             face_detector.setInputSize((width, height))
-            
+
             i = 0
 
             # Inference
-            
-            _, results = face_detector.detect(frame) # results is a tuple
+
+            _, results = face_detector.detect(frame)  # results is a tuple
 
             for det in (results if results is not None else []):
                 i = i + 1
@@ -196,7 +197,7 @@ if __name__ == '__main__':
 
             if count == 6:
                 print(f'frame_num: {frame_num}')
-                boxes = detectbox(frame)
+                # boxes = detectbox(frame)
                 count = count - 1
             elif count > 0:
                 count = count - 1
@@ -217,7 +218,6 @@ if __name__ == '__main__':
             # Visualize results in a new Window
             tm.stop()
             out.write(frame)
-            
 
             # cv2.imshow('YuNet Demo', frame)
             # cv2.imwrite(f'camera/process/{timeData}.jpg', frame)
