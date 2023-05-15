@@ -189,7 +189,8 @@ if __name__ == '__main__':
             # print(f'frame_num: {frame_num}, i = {i}, person = {person}, count = {count}, tick = {tick}')
             if person != i:
                 # print(f'different!! frame_num = {frame_num}, i = {i}, person = {person}')
-                count = 6
+                if tick != 1:
+                    count = 6
                 if person > i:
                     tick = 1
                     constancy = person

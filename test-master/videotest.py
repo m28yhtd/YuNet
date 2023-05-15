@@ -136,7 +136,7 @@ if __name__ == '__main__':
     yolo_model = YOLO('yolov8n.onnx')
     person = 0
     frame_num = 0
-    videoPath = 'test.mp4'
+    videoPath = 'lab.mp4'
     # print('loading')
     
     cap = cv2.VideoCapture(videoPath)
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     face_detector.setInputSize([row, col])
     fps = cap.get(cv2.CAP_PROP_FPS)
-    out = cv2.VideoWriter('final_result_test2.mp4', fourcc, fps, (row, col))
+    out = cv2.VideoWriter('final_result3.mp4', fourcc, fps, (row, col))
 
     count = 0
     tick = 0
@@ -187,7 +187,8 @@ if __name__ == '__main__':
             print(f'frame_num: {frame_num}, i = {i}, person = {person}, count = {count}, tick = {tick}')
             if person != i:
                 print(f'different!! frame_num = {frame_num}, i = {i}, person = {person}')
-                count = 6
+                if tick != 1:
+                    count = 6
                 if person > i:
                     tick = 1
                     constancy = person
