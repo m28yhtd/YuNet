@@ -205,7 +205,6 @@ if __name__ == '__main__':
             elif count > 0:
                 count = count - 1
             else:
-                count = 6
                 constancy = 0
 
             if i >= constancy and tick == 1:

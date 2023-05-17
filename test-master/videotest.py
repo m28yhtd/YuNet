@@ -146,14 +146,13 @@ if __name__ == '__main__':
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     face_detector.setInputSize([row, col])
     fps = cap.get(cv2.CAP_PROP_FPS)
-    out = cv2.VideoWriter('final_result3.mp4', fourcc, fps, (row, col))
+    out = cv2.VideoWriter('final_result.mp4', fourcc, fps, (row, col))
 
     count = 0
     tick = 0
     constancy = 0
     boxes = None
     num = 0
-    tm = cv2.TickMeter()
     while True:
         tm = cv2.TickMeter()
         while cv2.waitKey(1) < 0:
@@ -203,7 +202,6 @@ if __name__ == '__main__':
             elif count > 0:
                 count = count - 1
             else:
-                count = 6
                 constancy = 0
 
             if i >= constancy and tick == 1:
