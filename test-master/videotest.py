@@ -12,6 +12,7 @@ from ultralytics import YOLO
 
 def mosaic_area(img, box, ratio=0.1):
     # 모자이크를 적용할 영역을 구합니다.
+
     for i in range(len(box)):
         if box[i] < 0: 
             box[i] = 0
@@ -78,8 +79,9 @@ def visualize(frame, results, boxes, box_color=(255, 0, 0), text_color=(0, 0, 25
     if boxes == 0:
         for det in (results if results is not None else []):
             bbox = list(map(int, det[:4]))
-            
+
             output = mosaic_area(output, bbox)
+
             # cv2.rectangle(output, bbox , box_color, -1)
             
     '''
@@ -146,7 +148,7 @@ if __name__ == '__main__':
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     face_detector.setInputSize([row, col])
     fps = cap.get(cv2.CAP_PROP_FPS)
-    out = cv2.VideoWriter('final_result.mp4', fourcc, fps, (row, col))
+    out = cv2.VideoWriter('final_resultest.mp4', fourcc, fps, (row, col))
 
     count = 0
     tick = 0
@@ -209,10 +211,32 @@ if __name__ == '__main__':
                 face_detector.setScoreThreshold(0.8)
 
             # Default fps = tm.getFPS()
-            if boxes == None:
-                frame = visualize(frame, results, 0, fps=tm.getFPS())
+            if tick == 0:
+                if boxes == None:
+                    frame = visualize(frame, results, 0, fps=tm.getFPS())
+                else:
+                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
             else:
-                frame = visualize(frame, results, boxes, fps=tm.getFPS())
+                if boxes == None:
+                    frame = visualize(frame, results, 0, fps=tm.getFPS())
+                else:
+                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # 시계방향으로 90도 회전
+                face_detector.setInputSize((height, width))
+                _, results = face_detector.detect(frame)
+                if boxes == None:
+                    frame = visualize(frame, results, 0, fps=tm.getFPS())
+                else:
+                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+
+                frame = cv2.rotate(frame, cv2.ROTATE_180)
+                _, results = face_detector.detect(frame)
+                if boxes == None:
+                    frame = visualize(frame, results, 0, fps=tm.getFPS())
+                else:
+                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
             # Visualize results in a new Window
             tm.stop()
