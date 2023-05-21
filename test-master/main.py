@@ -213,10 +213,32 @@ if __name__ == '__main__':
 
             tm.stop()
             # Default fps = tm.getFPS()
-            if boxes == None:
-                frame = visualize(frame, results, 0, fps=tm.getFPS())
+            if tick == 0:
+                if boxes == None:
+                    frame = visualize(frame, results, 0, fps=tm.getFPS())
+                else:
+                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
             else:
-                frame = visualize(frame, results, boxes, fps=tm.getFPS())
+                if boxes == None:
+                    frame = visualize(frame, results, 0, fps=tm.getFPS())
+                else:
+                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # 시계방향으로 90도 회전
+                face_detector.setInputSize((height, width))
+                _, results = face_detector.detect(frame)
+                if boxes == None:
+                    frame = visualize(frame, results, 0, fps=tm.getFPS())
+                else:
+                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+
+                frame = cv2.rotate(frame, cv2.ROTATE_180)
+                _, results = face_detector.detect(frame)
+                if boxes == None:
+                    frame = visualize(frame, results, 0, fps=tm.getFPS())
+                else:
+                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
             # Visualize results in a new Window
             cv2.imshow('YuNet Demo', frame)
