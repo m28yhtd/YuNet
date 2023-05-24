@@ -1,6 +1,7 @@
 # 230414 Testing Code
 import onnx
 import numpy as np
+import time
 from cv2 import *  
 import cv2
 import matplotlib.pyplot as plt
@@ -170,7 +171,8 @@ if __name__ == '__main__':
             frame_num += 1
             hasFrame, frame = cap.read()
             OriginFrame = frame.copy()
-            timeData = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            # timeData = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            timeData = time.time()
             if not hasFrame:
                 print('No frames grabbed!')
                 break

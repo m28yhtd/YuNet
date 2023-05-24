@@ -1,6 +1,7 @@
 # 230414 Testing Code
 import onnx
 import numpy as np
+import time
 from cv2 import *  
 import cv2
 import matplotlib.pyplot as plt
@@ -170,7 +171,8 @@ if __name__ == '__main__':
             frame_num += 1
             hasFrame, frame = cap.read()
             OriginFrame = frame.copy()
-            timeData = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            # timeData = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            timeData = time.time()
             if not hasFrame:
                 # print('No frames grabbed!')
                 break
@@ -246,6 +248,7 @@ if __name__ == '__main__':
             t2 = threading.Thread(target=send_frame, args=(ProURL, frame, timeData))
             t1.start()
             t2.start()
+
             # cv2.imwrite(f'camera/process/{timeData}.jpg', frame)
             # cv2.imwrite(f'camera/original/{timeData}.jpg', OriginFrame)
 
