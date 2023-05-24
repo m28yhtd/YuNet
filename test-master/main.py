@@ -129,8 +129,15 @@ def visualize(frame, results, boxes, box_color=(255, 0, 0), text_color=(0, 0, 25
     '''
     return output
 
+def send_frame(url, frame, timeData):
+    _, img_encoded = cv2.imencode(".jpg", frame)
+    requests.post(url, data={'time': timeData, 'cameraID': cameraID}, files={'frame': ('image.jpg', img_encoded, 'image/jpeg')})
+
 if __name__ == '__main__':
-    
+
+    OriginURL = "http://bangwol08.iptime.org:20002/camera/original"
+    ProURL = "http://bangwol08.iptime.org:20002/camera/process"
+
     face_detector = cv2.FaceDetectorYN.create("new1_jodory.onnx", "", (320, 320))
     yolo_model = YOLO('yolov8n.onnx')
     
@@ -219,29 +226,26 @@ if __name__ == '__main__':
                 else:
                     frame = visualize(frame, results, boxes, fps=tm.getFPS())
             else:
-                if boxes == None:
-                    frame = visualize(frame, results, 0, fps=tm.getFPS())
-                else:
-                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+                frame = visualize(frame, results, 0, fps=tm.getFPS())
 
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # 시계방향으로 90도 회전
                 face_detector.setInputSize((height, width))
                 _, results = face_detector.detect(frame)
-                if boxes == None:
-                    frame = visualize(frame, results, 0, fps=tm.getFPS())
-                else:
-                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+                frame = visualize(frame, results, 0, fps=tm.getFPS())
 
                 frame = cv2.rotate(frame, cv2.ROTATE_180)
                 _, results = face_detector.detect(frame)
-                if boxes == None:
-                    frame = visualize(frame, results, 0, fps=tm.getFPS())
-                else:
-                    frame = visualize(frame, results, boxes, fps=tm.getFPS())
+                frame = visualize(frame, results, 0, fps=tm.getFPS())
+
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
             # Visualize results in a new Window
             cv2.imshow('YuNet Demo', frame)
+
+            t1 = threading.Thread(target=send_frame, args=(OriginURL, OriginFrame, timeData))
+            t2 = threading.Thread(target=send_frame, args=(ProURL, frame, timeData))
+            t1.start()
+            t2.start()
             # cv2.imwrite(f'camera/process/{timeData}.jpg', frame)
             # cv2.imwrite(f'camera/original/{timeData}.jpg', OriginFrame)
 
